@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Tareas" />
+  <title>Gestor de Tareas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── RESET ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; width: 100%; overflow-x: hidden; }
+
+    /* ══════════════════════════════════════════
+       ⚙  REEMPLAZA ESTA URL CON LA DE TU WEB APP
+       Ejemplo:
+       https://script.google.com/macros/s/XXXX.../exec
+    ══════════════════════════════════════════ */
+    :root {
+      --api-url: "https://script.google.com/macros/s/AKfycbxF24aAAszQtHjzO9QWQNCoMbCJxSdVSANmOHnb2wSSl8TnoHEuIcIPJE2DNBUPGQKyYQ/exec";
+
+      /* Paleta */
+      --bg:       #0f172a;
+      --surface:  #1e293b;
+      --surface2: #273348;
+      --border:   rgba(255,255,255,0.08);
+      --blue:     #3b82f6;
+      --blue-dim: #1d4ed8;
+      --green:    #22c55e;
+      --red:      #ef4444;
+      --amber:    #f59e0b;
+      --text:     #f1f5f9;
+      --text-2:   #94a3b8;
+      --text-3:   #475569;
+
+      /* Tipo */
+      --font: 'DM Sans', sans-serif;
+      --mono: 'DM Mono', monospace;
+
+      /* Misc */
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ── */
+    header {
+      padding: 20px 20px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-dot {
+      width: 32px; height: 32px;
+      background: var(--blue);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-dot svg { width: 18px; height: 18px; fill: #fff; }
+    .logo-text { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+    .logo-sub { font-size: 11px; color: var(--text-2); font-weight: 400; }
+
+    .status-pill {
+      font-size: 11px;
+      font-family: var(--mono);
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--text-2);
+    }
+
+    /* ── MAIN ── */
+    main { flex: 1; padding: 24px 20px 100px; }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-3);
+      margin-bottom: 12px;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    /* ── CAMPO ── */
+    .field { margin-bottom: 16px; }
+    .field:last-child { margin-bottom: 0; }
+    .field-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-2);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .req { color: var(--red); font-size: 12px; }
+
+    .input-wrap { position: relative; display: flex; align-items: center; }
+    input[type="text"],
+    input[type="email"],
+    input[type="date"],
+    textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 14px;
+      font-family: var(--font);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    input:focus, textarea:focus {
+      border-color: var(--blue);
+    }
+    input.has-voice { padding-right: 44px; }
+    input::placeholder, textarea::placeholder { color: var(--text-3); }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.5);
+      cursor: pointer;
+    }
+
+    /* ── BOTON VOZ (inline) ── */
+    .voice-btn-inline {
+      position: absolute;
+      right: 10px;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .voice-btn-inline:hover { background: var(--surface2); }
+    .voice-btn-inline.listening { background: var(--red); border-color: var(--red); animation: pulse 1s infinite; }
+    .voice-btn-inline svg { width: 14px; height: 14px; }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    /* ── BOTON VOZ GRANDE ── */
+    .voice-btn-big {
+      width: 100%;
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      border: 1px dashed var(--border);
+      color: var(--text-2);
+      font-family: var(--font);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 16px;
+    }
+    .voice-btn-big:hover { border-color: var(--blue); color: var(--blue); }
+    .voice-btn-big.listening {
+      background: rgba(239,68,68,0.1);
+      border-color: var(--red);
+      color: var(--red);
+    }
+    .mic-icon { width: 16px; height: 16px; }
+
+    /* ── BOTON GUARDAR ── */
+    .btn-save {
+      width: 100%;
+      padding: 16px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      margin-top: 4px;
+      letter-spacing: -0.01em;
+    }
+    .btn-save:hover { background: var(--blue-dim); }
+    .btn-save:active { transform: scale(0.98); }
+    .btn-save:disabled { background: var(--text-3); cursor: not-allowed; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 30px;
+      padding: 12px 20px;
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      z-index: 999;
+      white-space: nowrap;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    #toast.success { border-color: var(--green); color: var(--green); }
+    #toast.error { border-color: var(--red); color: var(--red); }
+
+    /* ── LOADER ── */
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── HINTS ── */
+    .hint {
+      font-size: 11px;
+      color: var(--text-3);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    /* ── VOZ INFO BADGE ── */
+    .voice-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--text-3);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 10px;
+      margin-bottom: 12px;
+    }
+    .voice-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+    /* ── TRANSCRIPT ── */
+    #transcript-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: 12px;
+      color: var(--text-2);
+      font-style: italic;
+      min-height: 38px;
+      margin-bottom: 12px;
+      display: none;
+      line-height: 1.6;
+    }
+
+    /* ── API URL BADGE ── */
+    .api-status {
+      font-size: 10px;
+      font-family: var(--mono);
+      color: var(--text-3);
+      text-align: center;
+      padding: 8px;
+    }
+    .api-status.configured { color: var(--green); }
+    .api-status.not-configured { color: var(--amber); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9 12l2 2 4-4M7 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2h-2M9 3h6M9 3a1 1 0 000 2h6a1 1 0 000-2"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-text">Gestor de Tareas</div>
+      <div class="logo-sub">Equipo Compusoft</div>
+    </div>
+  </div>
+  <div class="status-pill" id="day-label">Cargando...</div>
+</header>
+
+<main>
+
+  <!-- Voz rápida (dictado completo) -->
+  <div class="section-label">Registro rápido por voz</div>
+  <div class="card">
+
+    <div class="voice-badge">
+      <span class="dot"></span>
+      Dictado inteligente — di todos los datos de una sola vez
+    </div>
+
+    <button class="voice-btn-big" id="btn-voz-global" onclick="iniciarVozGlobal()">
+      <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+        <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/>
+      </svg>
+      <span id="voz-global-label">Mantén pulsado para dictar</span>
+    </button>
+
+    <div id="transcript-box"></div>
+
+    <p class="hint">
+      Ejemplo: <em>"Tarea: revisar contrato, responsable Juan Perez, email juan@empresa.com, vence el 20 de abril"</em>
+    </p>
+  </div>
+
+  <!-- Formulario manual -->
+  <div class="section-label" style="margin-top:8px">Formulario manual</div>
+  <div class="card">
+
+    <div class="field">
+      <div class="field-label">Nombre de la tarea <span class="req">*</span></div>
+      <div class="input-wrap">
+        <input type="text" id="f-tarea" class="has-voice" placeholder="Ej: Revisar informe financiero" />
+        <button class="voice-btn-inline" onclick="voz('f-tarea')" title="Dictar campo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+            <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Responsable <span class="req">*</span></div>
+      <div class="input-wrap">
+        <input type="text" id="f-responsable" class="has-voice" placeholder="Ej: Ana Torres" />
+        <button class="voice-btn-inline" onclick="voz('f-responsable')" title="Dictar campo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+            <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Email del responsable <span class="req">*</span></div>
+      <div class="input-wrap">
+        <input type="email" id="f-email" class="has-voice" placeholder="ana@empresa.com" autocapitalize="none" />
+        <button class="voice-btn-inline" onclick="voz('f-email')" title="Dictar campo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+            <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Fecha de vencimiento <span class="req">*</span></div>
+      <input type="date" id="f-fecha" />
+      </div>
+
+    <button class="btn-save" id="btn-guardar" onclick="guardarTarea()">
+      Guardar tarea
+    </button>
+
+  </div>
+
+  <div class="api-status not-configured" id="api-status-label">
+    ⚠ Reemplaza la URL del script en el código antes de usar
+  </div>
+
+</main>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+  // ══════════════════════════════════════════════════════
+  //  ⚙  REEMPLAZA AQUÍ LA URL DE TU WEB APP DE APPS SCRIPT
+  // ══════════════════════════════════════════════════════
+  const API_URL = "https://script.google.com/macros/s/AKfycbxF24aAAszQtHjzO9QWQNCoMbCJxSdVSANmOHnb2wSSl8TnoHEuIcIPJE2DNBUPGQKyYQ/exec";
+  // ══════════════════════════════════════════════════════
+
+  // Verificar si la URL fue configurada
+  const apiConfigurada = !API_URL.includes('REEMPLAZA');
+  const statusLabel = document.getElementById('api-status-label');
+  if (apiConfigurada) {
+    statusLabel.textContent = '✓ API conectada';
+    statusLabel.className = 'api-status configured';
+  }
+
+  // Día de semana en header
+  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const hoy = new Date();
+  document.getElementById('day-label').textContent =
+    dias[hoy.getDay()] + ' ' + hoy.getDate() + '/' + (hoy.getMonth()+1);
+
+  // ── RECONOCIMIENTO DE VOZ (campo individual) ──
+  function voz(campoId) {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      toast('Tu navegador no soporta dictado por voz', 'error');
+      return;
+    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const rec = new SR();
+    rec.lang = 'es-PE';
+    rec.continuous = false;
+    rec.interimResults = false;
+
+    const btn = document.querySelector(`#${campoId}`).parentElement.querySelector('.voice-btn-inline');
+    btn.classList.add('listening');
+
+    rec.onresult = (e) => {
+      const texto = e.results[0][0].transcript;
+      document.getElementById(campoId).value = texto;
+      btn.classList.remove('listening');
+    };
+    rec.onerror = () => btn.classList.remove('listening');
+    rec.onend   = () => btn.classList.remove('listening');
+    rec.start();
+  }
+
+  // ── RECONOCIMIENTO DE VOZ GLOBAL (detecta todos los campos) ──
+  let vozGlobalActiva = false;
+
+  function iniciarVozGlobal() {
+    if (vozGlobalActiva) return;
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      toast('Tu navegador no soporta dictado por voz', 'error');
+      return;
+    }
+
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const rec = new SR();
+    rec.lang = 'es-PE';
+    rec.continuous = false;
+    rec.interimResults = true;
+
+    const btnGlobal = document.getElementById('btn-voz-global');
+    const labelGlobal = document.getElementById('voz-global-label');
+    const transcriptBox = document.getElementById('transcript-box');
+
+    btnGlobal.classList.add('listening');
+    labelGlobal.textContent = 'Escuchando... habla ahora';
+    transcriptBox.style.display = 'block';
+    transcriptBox.textContent = '...';
+    vozGlobalActiva = true;
+
+    rec.onresult = (e) => {
+      let texto = '';
+      for (let i = 0; i < e.results.length; i++) texto += e.results[i][0].transcript;
+      transcriptBox.textContent = texto;
+
+      if (e.results[e.results.length - 1].isFinal) {
+        interpretarVoz(texto);
+      }
+    };
+
+    rec.onerror = () => resetVozGlobal();
+    rec.onend   = () => resetVozGlobal();
+    rec.start();
+  }
+
+  function resetVozGlobal() {
+    vozGlobalActiva = false;
+    const btn = document.getElementById('btn-voz-global');
+    btn.classList.remove('listening');
+    document.getElementById('voz-global-label').textContent = 'Mantén pulsado para dictar';
+  }
+
+  // ── PARSER DE VOZ → CAMPOS ──
+  function interpretarVoz(texto) {
+    const t = texto.toLowerCase();
+
+    // Tarea
+    const matchTarea = t.match(/tarea[:\s]+([^,]+)/i) ||
+                       t.match(/actividad[:\s]+([^,]+)/i);
+    if (matchTarea) document.getElementById('f-tarea').value = capitalizar(matchTarea[1].trim());
+
+    // Responsable
+    const matchResp = t.match(/responsable[:\s]+([^,]+)/i) ||
+                      t.match(/encargado[:\s]+([^,]+)/i);
+    if (matchResp) document.getElementById('f-responsable').value = capitalizar(matchResp[1].trim());
+
+    // Email
+    const matchEmail = t.match(/email[:\s]+(\S+@\S+)/i) ||
+                       t.match(/correo[:\s]+(\S+@\S+)/i) ||
+                       t.match(/([a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,})/i);
+    if (matchEmail) document.getElementById('f-email').value = matchEmail[1].trim().toLowerCase();
+
+    // Fecha — intenta interpretar expresiones como "20 de abril", "el 15/04"
+    const matchFecha = t.match(/vence[^\d]*(\d{1,2})[^\d]+(\w+)/i) ||
+                       t.match(/fecha[^\d]*(\d{1,2})[^\d]+(\w+)/i) ||
+                       t.match(/(\d{1,2})\s*[\/\-]\s*(\d{1,2})/i);
+    if (matchFecha) {
+      const fechaISO = parsearFechaVoz(matchFecha[0]);
+      if (fechaISO) document.getElementById('f-fecha').value = fechaISO;
+    }
+  }
+
+  function capitalizar(s) {
+    return s.replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  const meses = {
+    'enero':1,'febrero':2,'marzo':3,'abril':4,'mayo':5,'junio':6,
+    'julio':7,'agosto':8,'septiembre':9,'octubre':10,'noviembre':11,'diciembre':12
+  };
+
+  function parsearFechaVoz(texto) {
+    const hoy = new Date();
+    const anio = hoy.getFullYear();
+
+    // "15 de abril" / "el 20 de mayo"
+    const m1 = texto.match(/(\d{1,2})\s+de\s+(\w+)/i);
+    if (m1) {
+      const dia = parseInt(m1[1]);
+      const mes = meses[m1[2].toLowerCase()];
+      if (mes) return `${anio}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+    }
+
+    // "15/04" o "15-04"
+    const m2 = texto.match(/(\d{1,2})[\/\-](\d{1,2})/);
+    if (m2) {
+      const dia = parseInt(m2[1]), mes = parseInt(m2[2]);
+      return `${anio}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+    }
+
+    return null;
+  }
+
+  // ── GUARDAR EN GOOGLE SHEETS ──
+  async function guardarTarea() {
+  const tarea       = document.getElementById('f-tarea').value.trim();
+  const responsable = document.getElementById('f-responsable').value.trim();
+  const email       = document.getElementById('f-email').value.trim();
+  const fechaFin    = document.getElementById('f-fecha').value;
+
+  if (!tarea || !responsable || !email || !fechaFin) {
+    toast('Completa todos los campos requeridos', 'error'); return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    toast('El email no es válido', 'error'); return;
+  }
+  if (!apiConfigurada) {
+    toast('Configura la URL del script primero', 'error'); return;
+  }
+
+  const btn = document.getElementById('btn-guardar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Guardando...';
+
+  try {
+    // GET con parámetros en la URL — evita el problema de CORS
+    const params = new URLSearchParams({ tarea, responsable, email, fechaFin });
+    const resp = await fetch(API_URL + '?' + params.toString(), {
+      method: 'GET',
+      redirect: 'follow'   // Apps Script redirige antes de responder
+    });
+
+    const text = await resp.text();
+
+    // Apps Script a veces devuelve HTML de redirección, extraemos el JSON
+    const jsonMatch = text.match(/\{.*\}/s);
+    if (!jsonMatch) throw new Error('Respuesta inesperada');
+    const data = JSON.parse(jsonMatch[0]);
+
+    if (data.ok) {
+      toast('Tarea guardada en fila #' + data.fila, 'success');
+      limpiarFormulario();
+    } else {
+      toast('Error: ' + (data.error || 'respuesta inválida'), 'error');
+    }
+  } catch (e) {
+    toast('Error al guardar: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Guardar tarea';
+  }
+}
+
+  function limpiarFormulario() {
+    ['f-tarea','f-responsable','f-email','f-fecha'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    const tb = document.getElementById('transcript-box');
+    tb.textContent = '';
+    tb.style.display = 'none';
+  }
+
+  // ── TOAST ──
+  let toastTimer;
+  function toast(msg, tipo) {
+    const el = document.getElementById('toast');
+    el.textContent = tipo === 'success' ? '✓  ' + msg : '✕  ' + msg;
+    el.className = 'show ' + tipo;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.className = '', 3000);
+  }
+</script>
+</body>
+</html>
