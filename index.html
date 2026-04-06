@@ -505,33 +505,34 @@
 
   // ── PARSER DE VOZ → CAMPOS ──
   function interpretarVoz(texto) {
-    const t = texto.toLowerCase();
+  // Normalizar: quitar tildes en palabras clave para mayor tolerancia
+  const t = texto
+    .replace(/tarea[:\s]*/i, 'TAREA: ')
+    .replace(/actividad[:\s]*/i, 'TAREA: ')
+    .replace(/responsable[:\s]*/i, 'RESPONSABLE: ')
+    .replace(/encargado[:\s]*/i, 'RESPONSABLE: ')
+    .replace(/correo[:\s]*/i, 'EMAIL: ')
+    .replace(/email[:\s]*/i, 'EMAIL: ')
+    .replace(/vence[:\s]*/i, 'FECHA: ')
+    .replace(/fecha[:\s]*/i, 'FECHA: ')
+    .replace(/el\s+(\d)/i, '$1'); // quita "el" antes de un número
 
-    // Tarea
-    const matchTarea = t.match(/tarea[:\s]+([^,]+)/i) ||
-                       t.match(/actividad[:\s]+([^,]+)/i);
-    if (matchTarea) document.getElementById('f-tarea').value = capitalizar(matchTarea[1].trim());
+  // Extraer cada sección: captura todo lo que hay entre una clave y la siguiente
+  const matchTarea      = t.match(/TAREA:\s*(.+?)(?=RESPONSABLE:|EMAIL:|FECHA:|$)/i);
+  const matchResponsable = t.match(/RESPONSABLE:\s*(.+?)(?=TAREA:|EMAIL:|FECHA:|$)/i);
+  const matchEmail      = t.match(/EMAIL:\s*(\S+@\S+)/i)
+                       || t.match(/([a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,})/i);
+  const matchFecha      = t.match(/FECHA:\s*(.+?)(?=TAREA:|RESPONSABLE:|EMAIL:|$)/i);
 
-    // Responsable
-    const matchResp = t.match(/responsable[:\s]+([^,]+)/i) ||
-                      t.match(/encargado[:\s]+([^,]+)/i);
-    if (matchResp) document.getElementById('f-responsable').value = capitalizar(matchResp[1].trim());
+  if (matchTarea)       document.getElementById('f-tarea').value       = capitalizar(matchTarea[1].trim());
+  if (matchResponsable) document.getElementById('f-responsable').value = capitalizar(matchResponsable[1].trim());
+  if (matchEmail)       document.getElementById('f-email').value       = matchEmail[1].trim().toLowerCase();
 
-    // Email
-    const matchEmail = t.match(/email[:\s]+(\S+@\S+)/i) ||
-                       t.match(/correo[:\s]+(\S+@\S+)/i) ||
-                       t.match(/([a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,})/i);
-    if (matchEmail) document.getElementById('f-email').value = matchEmail[1].trim().toLowerCase();
-
-    // Fecha — intenta interpretar expresiones como "20 de abril", "el 15/04"
-    const matchFecha = t.match(/vence[^\d]*(\d{1,2})[^\d]+(\w+)/i) ||
-                       t.match(/fecha[^\d]*(\d{1,2})[^\d]+(\w+)/i) ||
-                       t.match(/(\d{1,2})\s*[\/\-]\s*(\d{1,2})/i);
-    if (matchFecha) {
-      const fechaISO = parsearFechaVoz(matchFecha[0]);
-      if (fechaISO) document.getElementById('f-fecha').value = fechaISO;
-    }
+  if (matchFecha) {
+    const fechaISO = parsearFechaVoz(matchFecha[1].trim());
+    if (fechaISO) document.getElementById('f-fecha').value = fechaISO;
   }
+}
 
   function capitalizar(s) {
     return s.replace(/\b\w/g, c => c.toUpperCase());
